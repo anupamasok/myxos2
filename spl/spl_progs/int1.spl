@@ -1,0 +1,80 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sysCallNo S1;
+sysCallNo = [physicalSP - 1]; // System call No is jus tBelow the IP on the stack, as INT will save IP on TOP.
+
+alias filename S3;	//Just below SystemCall No. is the space for Return value. The rest are
+filename = [physicalSP - 3]; 	//Arguments
+
+if (sysCallNo == 1) then
+	alias i S4;
+	i=0;	
+	//Searching FAT for existing file
+	
+	while (i < 512) do
+		if([FAT + i]==filename) then
+			[physicalSP - 2] = 0; // File EXISTS and set RETURN values as 0 -> SUCCESS
+			ireturn;
+			break;
+		endif;
+		i = i + 8;
+	endwhile;
+	
+	//Searching Disk Free List to find Free Space
+	alias flag S5;
+	flag = 0; // set initially as no free space. 
+			
+	i=24; // Start Searching From User Block in Disk Free List, After 447 is SWAPPING Space
+	while (i <= 447) do 
+		if([DISK_LIST + i] == 0) then // 0 -> Unused && 6th page -> DFL stored
+			flag = 1;
+			[physicalSP - 2] = 0; // Free Space EXISTS and set RETURN values as 0 -> SUCCESS
+			break; 
+		endif;
+		i = i + 1;
+	endwhile;
+
+	alias j S6;
+	j=2;
+
+	alias flag2 S7;
+	flag2 = 0;
+
+	while (j < 512 && flag == 1) do  // Start Searching in FAT for free Block
+		if([FAT + j ]== -1) then // -1 in BasicBlock space in FAT -> Unused 
+			flag2 = 1;
+			[FAT + j -1] = 0; // Size Initialised as 0
+			[FAT + j -2] = filename; // File name is set in the FAT
+			
+			[FAT + j ] = i; // Free Block No. FOUND in the LOOP above
+			[physicalSP - 2] = 0; // Free Block EXISTS in FAT and set RETURN values as 0 -> SUCCESS
+			break;
+		endif;
+		j = j + 8;
+	endwhile;
+
+	if (flag == 0 || flag2 == 0) then
+		[physicalSP - 2] = -1; // Free Space Does NOT EXIST and set RETURN values as -1 -> FAILURE
+		ireturn;
+	endif;
+
+	alias k S8;
+	k=0;
+
+	while (k < 256) do
+		[1 * 512 + k] = -1;// Set up Basic Block For new File in SCRATCHPAD @ Page 1
+		k = k +1;
+	endwhile;
+
+	store(1,i); // Store in location of Basic Block FOUND in 'i'.
+	[DISK_LIST + i] = 1; // Setting DFL as 1 for the Basic Block 'i'th position -> i-1 starting from '0'th location
+
+	store(5,19);
+	store(6,20);
+	ireturn;
+endif;
+
+if (sysCallNo == 4) then
+	ireturn;
+endif;
