@@ -2,9 +2,9 @@ alias physicalSP S0;
 physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 
 alias sysCallNo S1;
-sysCallNo = [physicalSP - 1]; // System call No is jus tBelow the IP on the stack, as INT will save IP on TOP.
+sysCallNo = [physicalSP - 1]; 	// System call No is jus tBelow the IP on the stack, as INT will save IP on TOP.
 
-alias filename S3;	//Just below SystemCall No. is the space for Return value. The rest are
+alias filename S3;				//Just below SystemCall No. is the space for Return value. The rest are
 filename = [physicalSP - 3]; 	//Arguments
 
 if (sysCallNo == 1) then

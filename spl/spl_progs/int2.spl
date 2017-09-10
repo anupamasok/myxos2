@@ -1,0 +1,129 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sysCallNo S1;
+sysCallNo = [physicalSP - 1]; 	// System call No is just Below the IP on the stack, as INT will save IP on TOP.
+
+if (sysCallNo == 2) then 		//open
+	alias filename S3;				//Just below SystemCall No. is the space for Return value. The rest are
+	filename = [physicalSP - 3]; 	//Arguments Filename to be opened
+
+	alias i S4;
+	i=0;
+
+	alias flag S5;
+	flag = 0;
+
+	alias j S6;
+	j =0;
+
+	alias currentPCB S7; 
+
+	alias k S8;
+	k =0;
+
+																		//Searching FAT for existing file
+	
+	while (i < 64) do
+		if([FAT + i * 8] == filename ) then
+			flag = 1;	// File EXISTS	and i contains the index of Fat entry of the File.		
+			break;		
+		endif;
+		i = i + 1;
+	endwhile;
+
+	if (flag == 0) then 
+		[physicalSP - 2] = -1; // Failure as no file is found with the given name
+		ireturn;
+	endif;
+
+																	//Searching FILE_TABLE for existing file
+		
+	flag = 0;
+
+	while (j < 64) do
+		if ([FILE_TABLE + j*2] == i) then
+			flag = 1; // File table contains entry corresponding to FAT index and J contains index of Table.			
+			break;
+		endif;
+		j = j + 1;
+	endwhile;
+
+	if (flag == 0) then // No open file entry so, Find free one
+		j =0;
+		while(j < 64) do
+			if ([FILE_TABLE + j*2] == -1) then
+				flag = 1;// FILE_TABLE does contain FREE entry. and J contains the index of FILE_TABLE
+				break;
+			endif;
+			j = j +1;
+		endwhile;
+	endif;
+
+	if (flag == 0) then 
+		[physicalSP - 2] = -1; // Failure as NO FREE entry in FILE_TABLE
+		ireturn;
+	endif;
+	
+			//1024 is the location of per process page table reg.Hence calculating the no of page tables,
+	currentPCB = READY_LIST + ((PTBR - PAGE_TABLE) / 8) * 32;	//Btw the current PTBR will give the process number 														
+							//. and using PID find PCB
+
+	
+	flag = 0;
+	while (k < 8) do 
+		if ([currentPCB + 15 + k*2] == -1) then
+			flag = 1;
+			[currentPCB + 15 + k*2] = j; // set PCB values
+			[currentPCB + 15 + k*2 + 1] = 0;	// set PCB values
+			break;
+		endif;
+		k = k +1;
+	endwhile;
+	
+	if (flag == 0) then 
+		[physicalSP - 2] = -1; // Failure as NO FREE entry in Per process file table
+		ireturn;
+	endif;
+
+	if (flag == 1) then 
+		[FILE_TABLE + j*2] = i; //Store index of the found FAT entry
+		[FILE_TABLE + j*2 + 1] = [FILE_TABLE + j*2 + 1] + 1; //increment value of open instances of the file.
+		[physicalSP -2] = k; //Success, return the file descriptor of the OPEN FILE
+		ireturn;
+	endif;
+endif;
+
+
+if (sysCallNo == 3) then
+	alias fileDescriptor S3;				//Just below SystemCall No. is the space for Return value. The rest are
+	fileDescriptor = [physicalSP - 3];
+
+	alias currentPCB S4;		//arguments
+	alias filetableindex S5; 
+
+	if(fileDescriptor < 0 || fileDescriptor > 7) then
+		 [physicalSP - 2] = -1; //invalid fileDescriptor FAILURE!!
+		 ireturn;
+	endif;
+	
+	
+	currentPCB = READY_LIST + ((PTBR - PAGE_TABLE) / 8) * 32;
+
+	if([currentPCB + 15 + fileDescriptor *2 ] == -1) then
+		 [physicalSP - 2] = -1; //File not present in per process file table FAILURE!!
+		 ireturn;
+	endif;// Filetable INDEX at [[currentPCB + 15 + fileDescriptor *2 ]]
+	
+
+	filetableindex = [currentPCB + 15 + fileDescriptor *2 ]; 
+	[FILE_TABLE + filetableindex * 2 + 1 ] = [FILE_TABLE + filetableindex * 2 + 1] - 1; // Decrement open file count
+
+	if( [FILE_TABLE + filetableindex * 2 + 1 ] == 0) then
+		 [FILE_TABLE + filetableindex*2 ]  = -1;
+	endif;
+	
+
+	[physicalSP - 2] = 0; // SUCCESS
+	ireturn;
+endif;

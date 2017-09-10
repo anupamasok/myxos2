@@ -1,39 +1,63 @@
-load (5,19); // *Load FAT from disk to Memory
-load (6,20); // *Load Disk Free List From Memory
+load (5,19); 	// *Load FAT from disk to Memory
+load (6,20); 	// *Load Disk Free List From Memory
 
-breakpoint;
+load (7,1); 	//The exception handler
+load (8,2); 	//from 1,2 blocks to pages 7,8
 
-load (7,1); //The exception handler
-load (8,2); //from 1,2 blocks to pages 7,8
+load (11,5); 	// The interrupt 1 routine
+load (12,6); 	// from 5,6 blocks to pages 11,12
 
-load (11,5); // The interrupt 1 routine
-load (12,6); // from 5,6 blocks to pages 11,12
+load (13,7); 	// The interrupt 2 routine
+load (14,8); 	// from 7,8 blocks to pages 13,14
 
-load (23,17); // The interrupt 7 routine
-load (24,18); // from 17,18 blocks to pages 23,24
+load (15,9); 	// The interrupt 3 routine
+load (16,10); 	// from 9,10 blocks to pages 15,16
+
+load (17,11); 	// The interrupt 4 routine
+load (18,12); 	// from 11,12 blocks to pages 17,18
+
+load (23,17); 	// The interrupt 7 routine
+load (24,18); 	// from 17,18 blocks to pages 23,24
+
+//######## S E T T I N G - U P - S Y S T E M - W I D E - F I L E - T A B L E ##############
+
+alias counter S0;
+counter = 0;
+while (counter < 128) do
+	[FILE_TABLE + counter] = -1;		//File location on FAT TABLE
+	[FILE_TABLE + counter + 1] = 0; 	//Count for open instances of the file is 0.
+	counter = counter + 2;
+endwhile;
+
 //#########################################################################################
 
 load (25,21);
-load (26,22); //load init from (21,22,23) blocks											// L O A D I N G - P R O C E S S E S
-load (27,23); // to (25,26,27) pages
+load (26,22); 	//load init from (21,22,23) blocks										// L O A D I N G - P R O C E S S E S
+load (27,23); 	// to (25,26,27) pages
 
 
 //#########################################################################################
-[READY_LIST	+ 0*32] = 0; // Finding PCB from ready list and assigning PID
+[READY_LIST	+ 0*32] = 0; 	// Finding PCB from ready list and assigning PID
 
-PTBR = PAGE_TABLE + 0*8; //setting PTBR to correct location on page table
-PTLR = 4; // each process 4 pages	
+PTBR = PAGE_TABLE + 0*8;	//setting PTBR to correct location on page table
+PTLR = 4; 					// each process 4 pages	
 
-[PTBR + 0] = 25;   //Setting the Page Tabele Entry For The process
-[PTBR + 1] = "01"; // ->"" So that '0' is not truncated										// P A G E  - T A B L E - S E T U P
-[PTBR + 2] = 26;																			// P. C. B  - S E T U P
-[PTBR + 3] = "01";  // reference bit-> 0
-[PTBR + 4] = 27;	// valid/invalid bit-> 1
-[PTBR + 5] = "01";	// For each entry in table
+[PTBR + 0] = 25;   			//Setting the Page Tabele Entry For The process
+[PTBR + 1] = "01"; 			// ->"" So that '0' is not truncated						// P A G E  - T A B L E - S E T U P
+[PTBR + 2] = 26;																					
+[PTBR + 3] = "01";  		// reference bit-> 0
+[PTBR + 4] = 27;			// valid/invalid bit-> 1
+[PTBR + 5] = "01";			// For each entry in table
 [PTBR + 6] = 28; 
-[PTBR + 7] = "01";	// page 28 -> STACK
+[PTBR + 7] = "01";			// page 28 -> STACK
+																						// P. C. B  - S E T U P
+[READY_LIST + 0*32 + 1] = 2;//Setting Process State (in 2nd bit in PCB) as 2 (Running) 
+counter =0;
+while (counter < 16) do
+	[READY_LIST + 0*32 + 15 + counter] = -1; // Setting the per process page table in PCB
+	counter = counter + 1;
+endwhile;
 
-[READY_LIST + 0*32 + 1] = 2; //Setting Process State (in 2nd bit in PCB) as 2 (Running)
 //#########################################################################################
 
 SP = 3 * 512; 	// This is the Logical Address (as is used in USER MODE after IRET)
