@@ -2,19 +2,21 @@ alias physicalSP S0;
 physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 
 alias sysCallNo S1;
-sysCallNo = [physicalSP - 1]; 	// System call No is jus tBelow the IP on the stack, as INT will save IP on TOP.
+sysCallNo = [physicalSP - 1]; 	//System call No is jus tBelow the IP on the stack, as INT will save IP on TOP.
 
-alias filename S3;				//Just below SystemCall No. is the space for Return value. The rest are
+alias filename S2;				//Just below SystemCall No. is the space for Return value. The rest are
 filename = [physicalSP - 3]; 	//Arguments
 
-if (sysCallNo == 1) then
+
+
+if (sysCallNo == 1) then    	//C R E A T E
 	alias i S4;
-	i=0;	
+	i=0;
 	//Searching FAT for existing file
 	
 	while (i < 512) do
 		if([FAT + i]==filename) then
-			[physicalSP - 2] = 0; // File EXISTS and set RETURN values as 0 -> SUCCESS
+			[physicalSP - 2] = 0;// File EXISTS and set RETURN values as 0 -> SUCCESS
 			ireturn;
 			break;
 		endif;
@@ -23,9 +25,9 @@ if (sysCallNo == 1) then
 	
 	//Searching Disk Free List to find Free Space
 	alias flag S5;
-	flag = 0; // set initially as no free space. 
+	flag = 0; 					// set initially as no free space. 
 			
-	i=24; // Start Searching From User Block in Disk Free List, After 447 is SWAPPING Space
+	i=24; 						// Start Searching From User Block in Disk Free List, After 447 is SWAPPING Space
 	while (i <= 447) do 
 		if([DISK_LIST + i] == 0) then // 0 -> Unused && 6th page -> DFL stored
 			flag = 1;
@@ -44,18 +46,19 @@ if (sysCallNo == 1) then
 	while (j < 512 && flag == 1) do  // Start Searching in FAT for free Block
 		if([FAT + j ]== -1) then // -1 in BasicBlock space in FAT -> Unused 
 			flag2 = 1;
-			[FAT + j -1] = 0; // Size Initialised as 0
-			[FAT + j -2] = filename; // File name is set in the FAT
+			[FAT + j -1] = 0; 			// Size Initialised as 0
+			[FAT + j -2] = filename; 	// File name is set in the FAT
 			
-			[FAT + j ] = i; // Free Block No. FOUND in the LOOP above
-			[physicalSP - 2] = 0; // Free Block EXISTS in FAT and set RETURN values as 0 -> SUCCESS
+			[FAT + j ] = i; 			// Free Block No. FOUND in the LOOP above
+			[physicalSP - 2] = 0;	 	// Free Block EXISTS in FAT and set RETURN values as 0 -> SUCCESS
 			break;
 		endif;
 		j = j + 8;
 	endwhile;
 
 	if (flag == 0 || flag2 == 0) then
-		[physicalSP - 2] = -1; // Free Space Does NOT EXIST and set RETURN values as -1 -> FAILURE
+		[physicalSP - 2] = -1; 			// Free Space Does NOT EXIST and set RETURN values as -1 -> FAILURE
+		print("CreaNoFr");
 		ireturn;
 	endif;
 
@@ -63,18 +66,118 @@ if (sysCallNo == 1) then
 	k=0;
 
 	while (k < 256) do
-		[1 * 512 + k] = -1;// Set up Basic Block For new File in SCRATCHPAD @ Page 1
+		[1 * 512 + k] = -1;				// Set up Basic Block For new File in SCRATCHPAD @ Page 1
 		k = k +1;
 	endwhile;
 
-	store(1,i); // Store in location of Basic Block FOUND in 'i'.
-	[DISK_LIST + i] = 1; // Setting DFL as 1 for the Basic Block 'i'th position -> i-1 starting from '0'th location
+	store(1,i); 						// Store in location of Basic Block FOUND in 'i'.
+	[DISK_LIST + i] = 1; 				// Setting DFL as 1 for the Basic Block 'i'th position -> i-1 starting from '0'th location
 
 	store(5,19);
 	store(6,20);
+
 	ireturn;
 endif;
 
 if (sysCallNo == 4) then
+	alias i S3;
+	alias flag S4;
+	alias j S5;
+	alias k S6;
+	alias block S7;
+	alias basicblock S8;
+
+	
+	i = 0;
+	flag = 0;
+
+	while (i < 64) do
+		if([FAT + i*8] == filename) then
+			flag = 1;						//Searching File in FAT and FOUND in i
+			break;
+		endif;
+		i = i + 1;
+	endwhile;
+
+	
+
+	if (flag == 0) then
+		[physicalSP - 2] = -1;				//File not in FAT -> Failure
+		print("DelFatErr");
+		ireturn;
+	endif;
+	
+	j = 0;
+	flag =0;
+	while (j < 64) do
+		if([FILE_TABLE + j*2] == i)	then 	// Searching in File Table and FOUND
+			[physicalSP - 2] = -1;			// Failure as file is open somewhere
+			print("DelFilOpe");
+			ireturn;
+			break;
+		endif;
+		j = j +1;
+	endwhile;
+
+	
+
+	
+
+	basicblock = [FAT + i*8 + 2];
+	if(basicblock == -1) then
+		[physicalSP -2] = -1; 				//invalid Basic Block
+		print("DelBbloer");
+		ireturn;
+	endif;
+
+	j = 0;
+	flag =1;
+
+	while (j < 256) do
+		load (1, basicblock); 			//load Basic block of file to scratchpad
+		block = [SCRATCHPAD + j];
+
+		if(block == -1)	then
+			break; 						//no more data blocks left;
+		endif;
+
+		if(24 <= block && block <448 ) then
+			load(1, block); 			//loading the data block
+
+			k=0;
+			while (k<512) do
+				[SCRATCHPAD +k] ="";
+				k=k+1;
+			endwhile;
+	
+			store(1,block);
+
+			[DISK_LIST + block]= 0;
+		endif;
+
+		j = j + 1;
+	endwhile;
+	
+
+	
+	load(1,basicblock);
+
+	j = 0;
+	while (j < 256) do
+		[SCRATCHPAD + j] = "";
+		j = j + 1;
+	endwhile;
+
+	store(1, basicblock); 					//Invalidate and store the basicblock to DISK
+
+	[DISK_LIST + basicblock] = 0; 			//Invalidate DFL for Basicblock
+	[FAT + i*8] = -1;						// File name invalidated
+	[FAT + i*8 + 1] = 0;					//Size is 0
+	[FAT + i*8 + 2] = -1;					//basic block in fat as -1
+
+	store(5,19);
+	store(6,20);
+	[physicalSP - 2] = 0;					//Success
 	ireturn;
+
 endif;
