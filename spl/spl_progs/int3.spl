@@ -32,7 +32,7 @@ if (sysCallNo == 6) then 		// 	S E E K -----------------------------------------
 		ireturn;
 	endif;
 
-	fatIndex = [PAGE_TABLE + fileTableIndex*2];	//Find Fat index from System Wide Open File Table
+	fatIndex = [FILE_TABLE + fileTableIndex*2];	//Find Fat index from System Wide Open File Table
 
 	fileSize = [FAT + fatIndex*8 + 1]; 			//file size 
 
@@ -48,6 +48,61 @@ if (sysCallNo == 6) then 		// 	S E E K -----------------------------------------
 endif;
 
 
-if (sysCallNo == 3) then		// C L O S E -------------------------------------------------------------------------------------------------------
+if (sysCallNo == 7) then		// R E A D ------------------------------------------------------------------------------------------------------------
+	alias wordRead S2;
+	alias fileDescriptor S3;
+	alias currentPCB S4;
+	alias fileTableIndex S5;
+	alias LSeek S6;
+	alias fatIndex S7;
+	alias dataBlock S8;
+
+	wordRead = [physicalSP -3]; 		//write the word read to this Location
+	fileDescriptor = [physicalSP -4];
+
+	if (0>fileDescriptor || fileDescriptor>7) then 	
+		[physicalSP -2] = -1;					//invalid fileDescriptor
+		print("ReaFDscEr");
+		ireturn;
+	endif;
+
+	currentPCB = READY_LIST + ((PTBR - PAGE_TABLE) / 8 ) * 32; // PID = ((PTBR - PAGE_TABLE) / 8 )
+
+	fileTableIndex = [currentPCB + 15 + fileDescriptor*2];
+
+	if (fileTableIndex == -1) then	
+		[physicalSP -2] = -1;					//invalid Index in PCB per process file table
+		print("ReaFtiErr");
+		ireturn;
+	endif;
+
+	LSeek = [currentPCB + 15 + fileDescriptor*2 + 1];
+
+	fatIndex = [FILE_TABLE + fileTableIndex*2];
+
+	load (1, [FAT + fatIndex*8 + 2]); //load BASIC BLOCK from FAT entry to SCRATCHPAD
+
+	if (LSeek == [FAT + fatIndex*8 +1]) then
+		[physicalSP -2] = -1;					//EOF reached, hence no more words to be read
+		print("Read!EOF");
+		ireturn;
+	endif;
+
+	dataBlock = [SCRATCHPAD + (LSeek / 512)];
+
+	if ( dataBlock == -1) then
+		[physicalSP -2] = -1;					//Invalid DATA Block 
+		print("ReaInvDbl");
+		ireturn;
+	endif;
+
+	load (1,dataBlock); //load dataBlock to SCRATCH_PAD
+
+	wordRead = [SCRATCHPAD + (LSeek % 512)];
+
+	[physicalSP-3] =wordRead;
+	[currentPCB + 15 + fileDescriptor*2 + 1] = [currentPCB + 15 + fileDescriptor*2 + 1] + 1;
+
+	[physicalSP -2] =0; //SUCCESS
 	ireturn;
 endif;
