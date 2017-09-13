@@ -44,7 +44,7 @@ if (sysCallNo == 2) then 		// 	O P E N -----------------------------------------
 
 	while (j < 64) do
 		if ([FILE_TABLE + j*2] == i) then
-			flag = 1; 				// File table contains entry corresponding to FAT index and J contains index of Table.			
+			flag = 1; 				// File table contains entry corresponding to FAT index as already open and J contains index of Table.			
 			break;
 		endif;
 		j = j + 1;

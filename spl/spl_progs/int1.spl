@@ -9,7 +9,7 @@ filename = [physicalSP - 3]; 	//Arguments
 
 
 
-if (sysCallNo == 1) then    	//C R E A T E
+if (sysCallNo == 1) then    	//C R E A T E --------------------------------------------------------------------------------------------
 	alias i S4;
 	i=0;
 	//Searching FAT for existing file
@@ -79,7 +79,7 @@ if (sysCallNo == 1) then    	//C R E A T E
 	ireturn;
 endif;
 
-if (sysCallNo == 4) then
+if (sysCallNo == 4) then				// D E L E T E ------------------------------------------------------------------------------------
 	alias i S3;
 	alias flag S4;
 	alias j S5;

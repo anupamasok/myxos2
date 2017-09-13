@@ -2,6 +2,7 @@ load --os $HOME/myxos/spl/spl_progs/os_startup.xsm
 load --exhandler $HOME/myxos/spl/spl_progs/exhandler.xsm
 load --int=1 $HOME/myxos/spl/spl_progs/int1.xsm
 load --int=2 $HOME/myxos/spl/spl_progs/int2.xsm
+load --int=4 $HOME/myxos/spl/spl_progs/int4.xsm
 load --int=7 $HOME/myxos/spl/spl_progs/exhandler.xsm
 
 

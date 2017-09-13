@@ -1,0 +1,59 @@
+
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sysCallNo S1;
+sysCallNo = [physicalSP - 1]; 	//System call No is jus tBelow the IP on the stack, as INT will save IP on TOP.								       S T A C K
+
+if (sysCallNo == 5) then    	// W R I T E --------------------------------------------------------------------------------------------		       |
+	alias wordToWrite S2;					// Just below SystemCall No. is the space for Return value. The rest are Arguments						||Arg2||
+	wordToWrite = [physicalSP - 3];		// WORD to write 																							||Arg1||
+
+	alias fileDescriptor S3;				
+	fileDescriptor = [physicalSP - 4];  // File Descriptor 
+
+	alias currentPCB S4;
+	alias fileTableIndex S5;
+	alias seekPosition S6;
+	alias fatIndex S7;
+	alias i S8;
+	alias flag S9;
+	alias dataBlockNO S10;
+
+
+	if(0>fileDescriptor || fileDescriptor>7) then
+		[physicalSP -2] = -1; 			//Failure, Invalid fileDescriptor
+		print("WriFDscEr");
+		ireturn;
+	endif;
+
+	currentPCB = READY_LIST + ((PTBR - PAGE_TABLE) /8) * 32); // PID = (PTBR - PAGE_TABLE) /8)
+
+	fileTableIndex = [currentPCB + 15 + fileDescriptor*2];
+	seekPosition = [currentPCB + 15 + fileDescriptor*2 + 1]; //Find table index and seek position of open file from PCB
+
+	if (fileTableIndex == -1 || seekPosition == -1) then
+		[physicalSP -2] = -1; 			//Failure, Invalid File Table Index or Seek Position
+		print("WriFTIskp");
+		ireturn;
+	endif;
+	
+	fatIndex = [FILE_TABLE + fileTableIndex*2]; //Find Fat index from System Wide Open File Table
+
+	load(1, [FAT + fatIndex8 + 2]); //load the BASIC BLOCK of the OPEN FILE to SCRATCHPAD
+
+	dataBlockNO = [SCRATCHPAD + (seekPosition/512)];
+
+	if ( dataBlockNO == -1) then
+		i= 24;
+		flag =0;
+		while (i<448) do 
+			if([DISK_LIST + i] == 0)
+
+	endif;
+
+endif;
+
+if (sysCallNo == 4) then		// D E L E T E -------------------------------------------------------------------------------------------
+	ireturn;
+endif;
