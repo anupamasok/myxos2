@@ -116,7 +116,7 @@ if (sysCallNo == 3) then						// C L O S E -------------------------------------
 
 	if([currentPCB + 15 + fileDescriptor *2 ] == -1) then
 		 [physicalSP - 2] = -1; 				//File not present in per process file table FAILURE!!
-		 print("CloFl~FAT");
+		 print("CloFl~FTL");
 		 ireturn;
 	endif;										//Filetable INDEX at [[currentPCB + 15 + fileDescriptor *2 ]]
 	

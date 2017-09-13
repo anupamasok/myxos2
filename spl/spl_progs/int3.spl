@@ -1,0 +1,53 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sysCallNo S1;
+sysCallNo = [physicalSP - 1]; 		//System call No is just Below the IP on the stack, as INT will save IP on TOP.
+
+if (sysCallNo == 6) then 		// 	S E E K --------------------------------------------------------------------------------------------------------
+	alias newLseek S2;
+	alias fileDescriptor S3;
+	alias currentPCB S4;
+	alias fileTableIndex S5;
+	alias fatIndex S6;
+	alias fileSize S7;
+
+	newLseek = [physicalSP -3];				    //S T A C K
+	fileDescriptor = [physicalSP -4];			//||Arg2||
+												//||Arg1||
+
+	if (0>fileDescriptor || fileDescriptor>7) then 	
+		[physicalSP -2] = -1;					//invalid fileDescriptor
+		print("SekFDscEr");
+		ireturn;
+	endif;
+
+	currentPCB = READY_LIST + ((PTBR - PAGE_TABLE) / 8 ) * 32; // PID = ((PTBR - PAGE_TABLE) / 8 )
+
+	fileTableIndex = [currentPCB + 15 + fileDescriptor*2];
+
+	if (fileTableIndex == -1) then	
+		[physicalSP -2] = -1;					//invalid Index in PCB per process file table
+		print("SekFtiErr");
+		ireturn;
+	endif;
+
+	fatIndex = [PAGE_TABLE + fileTableIndex*2];	//Find Fat index from System Wide Open File Table
+
+	fileSize = [FAT + fatIndex*8 + 1]; 			//file size 
+
+	if (0 > newLseek || newLseek > fileSize) then
+		[physicalSP -2] = -1;					//invalid Index in LSeek size
+		print("SekINVlSe");
+		ireturn;
+	endif;
+
+	[currentPCB + 15 + fileDescriptor*2 + 1] = newLseek;
+	[physicalSP -2] =0;
+	ireturn;
+endif;
+
+
+if (sysCallNo == 3) then		// C L O S E -------------------------------------------------------------------------------------------------------
+	ireturn;
+endif;

@@ -95,6 +95,6 @@ if (sysCallNo == 5) then    	// W R I T E --------------------------------------
 	ireturn;
 endif;
 
-if (sysCallNo == 4) then		// D E L E T E -------------------------------------------------------------------------------------------
+if (sysCallNo == 4) then		
 	ireturn;
 endif;

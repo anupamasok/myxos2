@@ -4,32 +4,21 @@ decl
 enddecl
 
 integer main()
-{	status2 = Create("prime.xsm");
-	print(status2);
+{	//status2 = Create("prime.xsm");
+	//print(status2);
 
-	status = Write(status2,"How Are U my bwoy");
-	print(status);	
+	//status2 = Open("prime.xsm");
+	//print(status2);	
 
-	breakpoint;
+	//breakpoint;
 
-	status2 = Open("prime.xsm");
-	print(status2);	
-
-	breakpoint;
-
-	status = Write(status2,"Hello");
-	print(status);
-
-	status = Write(status2,"How Are U my bwoy");
+	status = Seek(0,600);
 	print(status);	
 
 	breakpoint;
 
 	status = Close(status2);
 	print(status);	
-
-	status = Write(status2,"How Are U my bwoy");
-	print(status);
 
 	breakpoint;
 
