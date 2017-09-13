@@ -19,6 +19,7 @@ if (sysCallNo == 5) then    	// W R I T E --------------------------------------
 	alias i S8;
 	alias flag S9;
 	alias dataBlockNO S10;
+	alias flag2 S11;
 
 
 	if(0>fileDescriptor || fileDescriptor>7) then
@@ -27,8 +28,8 @@ if (sysCallNo == 5) then    	// W R I T E --------------------------------------
 		ireturn;
 	endif;
 
-	currentPCB = READY_LIST + ((PTBR - PAGE_TABLE) /8) * 32); // PID = (PTBR - PAGE_TABLE) /8)
-
+	currentPCB = READY_LIST + ((PTBR - PAGE_TABLE) /8) * 32; // PID = (PTBR - PAGE_TABLE) /8)
+	
 	fileTableIndex = [currentPCB + 15 + fileDescriptor*2];
 	seekPosition = [currentPCB + 15 + fileDescriptor*2 + 1]; //Find table index and seek position of open file from PCB
 
@@ -40,18 +41,58 @@ if (sysCallNo == 5) then    	// W R I T E --------------------------------------
 	
 	fatIndex = [FILE_TABLE + fileTableIndex*2]; //Find Fat index from System Wide Open File Table
 
-	load(1, [FAT + fatIndex8 + 2]); //load the BASIC BLOCK of the OPEN FILE to SCRATCHPAD
+	load(1, [FAT + fatIndex*8 + 2]); //load the BASIC BLOCK of the OPEN FILE to SCRATCHPAD
 
+	flag2 =0;
 	dataBlockNO = [SCRATCHPAD + (seekPosition/512)];
 
 	if ( dataBlockNO == -1) then
+		flag2 = 1;
 		i= 24;
 		flag =0;
 		while (i<448) do 
-			if([DISK_LIST + i] == 0)
+			if([DISK_LIST + i] == 0)  then
+				flag =1;			 					// Freen entry is found at index  i
+				[DISK_LIST + i] = 1; 					//setting the Data Block Entry as 1 in DFL
+				[SCRATCHPAD + (seekPosition/512)] = i;	//Set the Data block Location in Basic block of File			
+
+				[FAT + fatIndex*8 + 1] = [FAT + fatIndex*8 + 1] + 512; //add the extra memory size to the FAT entry
+
+				store(1,[FAT + fatIndex*8 + 2]); 		//store the basic block back to disk
+				store(5,19); 		//store the FAT back to disk
+				store(6,20); 		//store the DFL back to disk
+				break;
+			endif;
+
+			i = i+1;
+		endwhile;
+
+		if(flag == 0) then
+			[physicalSP -2] = -1; //NO Free space in FileSystem
+			print("wriNoFre");
+			ireturn;
+		endif;
 
 	endif;
 
+	if(flag2 == 1) then
+		dataBlockNO = i;
+	endif;
+
+	load(1, dataBlockNO); 		//Fetch datablock from DISK to MEMORY
+
+	[SCRATCHPAD + (seekPosition % 512)] = wordToWrite; // write the word to the OFFSET Pointed Location in Data Block
+
+	if(dataBlockNO >= 24 || dataBlockNO <448) then
+		store (1, dataBlockNO);
+	else
+		print("WriInvStr");
+	endif;
+
+	[currentPCB + 15 + fileDescriptor*2 + 1] = [currentPCB + 15 + fileDescriptor*2 + 1] + 1;
+
+	[physicalSP - 2] = 0; //Success
+	ireturn;
 endif;
 
 if (sysCallNo == 4) then		// D E L E T E -------------------------------------------------------------------------------------------
