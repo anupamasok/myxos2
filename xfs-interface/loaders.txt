@@ -10,3 +10,4 @@ load --int=7 $HOME/myxos/spl/spl_progs/exhandler.xsm
 
 load --init $HOME/myxos/apl/apl_progs/initcreate.xsm
 load --init $HOME/myxos/apl/apl_progs/initopen.xsm
+load --init $HOME/myxos/apl/apl_progs/merge.xsm
