@@ -37,7 +37,7 @@ if (sysCallNo == 6) then 		// 	S E E K -----------------------------------------
 	fileSize = [FAT + fatIndex*8 + 1]; 			//file size 
 
 	if (0 > newLseek || newLseek > fileSize) then
-		[physicalSP -2] = -1;					//invalid Index in LSeek size
+		[physicalSP -2] = -1;					//invalid Index in LSeek size. The maximum permissible value = filesize
 		print("SekINVlSe");
 		ireturn;
 	endif;
@@ -46,7 +46,6 @@ if (sysCallNo == 6) then 		// 	S E E K -----------------------------------------
 	[physicalSP -2] =0;
 	ireturn;
 endif;
-
 
 if (sysCallNo == 7) then		// R E A D ------------------------------------------------------------------------------------------------------------
 	alias wordRead S2;

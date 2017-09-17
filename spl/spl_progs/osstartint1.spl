@@ -16,10 +16,16 @@ load (16,10); 	// from 9,10 blocks to pages 15,16
 load (17,11); 	// The interrupt 4 routine
 load (18,12); 	// from 11,12 blocks to pages 17,18
 
+load (19,13); 	// The interrupt 5 routine
+load (20,14); 	// from 13,14 blocks to pages 19,20
+
+load (21,15); 	// The interrupt 6 routine
+load (22,16); 	// from 15,16 blocks to pages 21,22
+
 load (23,17); 	// The interrupt 7 routine
 load (24,18); 	// from 17,18 blocks to pages 23,24
 
-//######## S E T T I N G - U P - S Y S T E M - W I D E - F I L E - T A B L E ##############
+//######### S E T T I N G - U P - S Y S T E M - W I D E - F I L E - T A B L E #############
 
 alias counter S0;
 counter = 0;
@@ -29,18 +35,36 @@ while (counter < 128) do
 	counter = counter + 2;
 endwhile;
 
-//#########################################################################################
+//################## S E T T I N G - U P - M E M - F R E E - L I S T ######################
+
+counter = 0;
+while (counter < 29) do
+	[MEM_LIST + counter] = 1;		//File location on MEM_LIST
+	counter = counter + 1;			//Memory List is set for all OS pages + INIT pages
+endwhile;
+
+//##################### S E T T I N G - U P - P C B - S T A T E S #########################
+
+counter = 0;
+while (counter < 32) do				//32 PCBs
+	[READY_LIST + counter*32 + 1] = 0;		
+	counter = counter + 1;			//		
+endwhile;
+
+
+//######################## L O A D I N G - P R O C E S S E S ##############################	
 
 load (25,21);
-load (26,22); 	//load init from (21,22,23) blocks										// L O A D I N G - P R O C E S S E S
+load (26,22); 	//load init from (21,22,23) blocks										
 load (27,23); 	// to (25,26,27) pages
 
 
-//#########################################################################################
-[READY_LIST	+ 0*32] = 0; 	// Finding PCB from ready list and assigning PID
+//##################################### I N I T ###########################################
+
+[READY_LIST	+ 0*32] = 0; 	// Finding PCB from ready list and assigning PID = 0
 
 PTBR = PAGE_TABLE + 0*8;	//setting PTBR to correct location on page table
-PTLR = 4; 					// each process 4 pages	
+PTLR = 4; 					// each process 4 pages										//
 
 [PTBR + 0] = 25;   			//Setting the Page Tabele Entry For The process
 [PTBR + 1] = "01"; 			// ->"" So that '0' is not truncated						// P A G E  - T A B L E - S E T U P
@@ -51,7 +75,8 @@ PTLR = 4; 					// each process 4 pages
 [PTBR + 6] = 28; 
 [PTBR + 7] = "01";			// page 28 -> STACK
 																						// P. C. B  - S E T U P
-[READY_LIST + 0*32 + 1] = 2;//Setting Process State (in 2nd bit in PCB) as 2 (Running) 
+[READY_LIST + 0*32 + 1] = 2;//Setting Process State (in 2nd bit in PCB) as 2 (Running)
+
 counter =0;
 while (counter < 16) do
 	[READY_LIST + 0*32 + 15 + counter] = -1; // Setting the per process page table in PCB

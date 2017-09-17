@@ -158,8 +158,6 @@ if (sysCallNo == 4) then				// D E L E T E -------------------------------------
 		j = j + 1;
 	endwhile;
 	
-
-	
 	load(1,basicblock);
 
 	j = 0;

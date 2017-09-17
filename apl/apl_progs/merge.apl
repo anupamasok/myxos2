@@ -24,11 +24,12 @@ integer main()
 	x= Open("array3.dat");
 	breakpoint;
 
-	c= Write(a,4);
+	c= Write(a,5);
 	c= Write(a,'1');
 	c= Write(a,'3');
 	c= Write(a,'5');
 	c= Write(a,'7');
+	c= Write(a,'9');
 
 	c= Seek(a,0);
 
